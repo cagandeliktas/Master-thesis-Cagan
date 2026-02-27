@@ -1,0 +1,18 @@
+# macOS
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Plots / generated images
+*.png
+*.jpg
+*.jpeg
+*.pdf
+
+# Python
+__pycache__/
+*.pyc
+
+# Data (optional, if large)
+data/
