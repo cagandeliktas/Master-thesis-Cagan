@@ -14,6 +14,9 @@ from note_processing import prepare_lactate_chunks
 from llm_client import call_llama_server
 from parsing import parse_lactate_json
 from aggregation import aggregate_lactate_chunk_results
+from datetime import datetime
+
+now = datetime.now() # get the time
 
 
 def run_lactate_extraction_for_note(note_text: str) -> tuple[dict, list[str]]:
@@ -101,7 +104,7 @@ def main():
     print(results)
 
     out_df = pd.DataFrame(results)
-    out_path = OUTPUT_DIR / "lactate_extraction_results.csv"
+    out_path = OUTPUT_DIR / f"lactate_extraction_results_{now.strftime("%Y-%m-%d %H:%M:%S")}.csv"
     out_df.to_csv(out_path, index=False)
 
     print(f"Saved results to: {out_path}")
