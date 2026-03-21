@@ -23,9 +23,6 @@ def is_lab_like_line(line: str) -> bool:
 
 
 def normalize_wrapped_lines(text: str) -> str:
-    """
-    Join wrapped narrative lines, but keep lab-like lines separate.
-    """
     if not text:
         return ""
 
@@ -126,7 +123,7 @@ def make_chunks(sentences: List[str], chunk_size: int = 5, overlap: int = 1) -> 
     return chunks
 
 
-def prepare_lactate_chunks(
+def prepare_chunks(
     note_text: str,
     keywords: List[str],
     window: int = 1,
