@@ -1,5 +1,6 @@
 import pandas as pd
 from datetime import datetime
+import json
 
 from config import (
     OUTPUT_DIR,
@@ -22,7 +23,7 @@ def run_feature_extraction_for_note(
     json_keys: list[str],
     aggregator,
     empty_result: dict,
-) -> tuple[dict, list[str]]:
+) -> tuple[dict, list[str], list[dict]]:
     chunks = prepare_chunks(
         note_text=note_text,
         keywords=keywords,
@@ -34,11 +35,12 @@ def run_feature_extraction_for_note(
     if not chunks:
         result = empty_result.copy()
         result["chunk_results"] = []
-        return result, []
+        return result, [], []
 
     chunk_results = []
+    chunk_debug_rows = []
 
-    for chunk in chunks:
+    for i, chunk in enumerate(chunks):
         prompt = prompt_builder(chunk)
 
         try:
@@ -54,20 +56,27 @@ def run_feature_extraction_for_note(
             print("**********************************************************************")
 
             parsed = parse_llm_json(raw_output, json_keys)
-            chunk_results.append(parsed)
 
         except Exception as e:
-            print(f"[WARN] Failed chunk: {e}")
+            print(f"[WARN] Failed chunk {i}: {e}")
 
-            fallback = {k: None for k in json_keys}
-            fallback["evidence_quote"] = ""
-            fallback["confidence"] = "low"
-            chunk_results.append(fallback)
+            raw_output = f"[ERROR] {e}"
+            parsed = {k: None for k in json_keys}
+            parsed["evidence_quote"] = ""
+            parsed["confidence"] = "low"
+
+        chunk_results.append(parsed)
+        chunk_debug_rows.append({
+            "chunk_index": i,
+            "chunk_text": chunk,
+            "raw_output": raw_output,
+            "parsed_output": parsed,
+        })
 
     final_result = aggregator(chunk_results)
     final_result["chunk_results"] = chunk_results
 
-    return final_result, chunks
+    return final_result, chunks, chunk_debug_rows
 
 
 def main(feature_name: str = "lactate"):
@@ -85,6 +94,7 @@ def main(feature_name: str = "lactate"):
     df = df.merge(df_final_structured, how="inner", on=["hadm_id", "subject_id"])
 
     results = []
+    chunk_level_results = []
 
     for index, row in df.iterrows():
         print(
@@ -93,7 +103,7 @@ def main(feature_name: str = "lactate"):
             f"******************************************"
         )
 
-        result, chunks = run_feature_extraction_for_note(
+        result, chunks, chunk_debug_rows = run_feature_extraction_for_note(
             note_text=row["text"],
             keywords=feature_cfg["keywords"],
             prompt_builder=feature_cfg["prompt_builder"],
@@ -103,17 +113,38 @@ def main(feature_name: str = "lactate"):
         )
 
         result_row = feature_cfg["result_row_builder"](row, result, chunks)
+
+        # optional: keep compact JSON string in patient-level file
+        result_row["chunk_debug_rows"] = json.dumps(chunk_debug_rows, ensure_ascii=False)
         results.append(result_row)
 
-    out_df = pd.DataFrame(results)
-    out_path = OUTPUT_DIR / (
-        f'{feature_cfg["output_file_prefix"]}_'
-        f'{now.strftime("%Y-%m-%d_%H-%M-%S")}.csv'
-    )
-    out_df.to_csv(out_path, index=False)
+        # save chunk-level rows separately
+        for debug_row in chunk_debug_rows:
+            chunk_row = {
+                "subject_id": row["subject_id"],
+                "hadm_id": row["hadm_id"],
+                "feature_name": feature_name,
+                "chunk_index": debug_row["chunk_index"],
+                "chunk_text": debug_row["chunk_text"],
+                "raw_output": debug_row["raw_output"],
+                "parsed_output": json.dumps(debug_row["parsed_output"], ensure_ascii=False),
+            }
+            chunk_level_results.append(chunk_row)
 
-    print(f"Saved results to: {out_path}")
+    out_df = pd.DataFrame(results)
+    chunk_df = pd.DataFrame(chunk_level_results)
+
+    timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
+
+    out_path = OUTPUT_DIR / f'{feature_cfg["output_file_prefix"]}_{timestamp}.csv'
+    chunk_out_path = OUTPUT_DIR / f'{feature_cfg["output_file_prefix"]}_chunks_{timestamp}.csv'
+
+    out_df.to_csv(out_path, index=False)
+    chunk_df.to_csv(chunk_out_path, index=False)
+
+    print(f"Saved patient-level results to: {out_path}")
+    print(f"Saved chunk-level results to: {chunk_out_path}")
 
 
 if __name__ == "__main__":
-    main("shock") #main("shock") #main("lactate")
+    main("coma")  #main("lactate") #OR #main("shock") # main("coma")

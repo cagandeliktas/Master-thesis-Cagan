@@ -35,3 +35,16 @@ def build_shock_result_row(row: pd.Series, result: dict, chunks: list[str]) -> d
         "n_chunks": result["n_chunks"],
         "chunks": chunks,
     }
+
+
+def build_coma_result_row(row: pd.Series, result: dict, chunks: list[str]) -> dict:
+    return {
+        "note_id": row["note_id"],
+        "hadm_id": row["hadm_id"],
+        "subject_id": row["subject_id"],
+        "note_type": row["note_type"],
+        "llm_present": result["final_present"],
+        "llm_evidence_quote": result["final_evidence_quote"],
+        "n_chunks": result["n_chunks"],
+        "chunks": chunks,
+    }

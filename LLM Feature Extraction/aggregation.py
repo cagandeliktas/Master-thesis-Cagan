@@ -24,8 +24,8 @@ def select_evidence(chunk_results: List[dict]) -> str:
 
 
 def aggregate_feature_chunk_results(
-    chunk_results: List[dict],
-    extra_aggregations: Optional[Dict[str, Callable[[List[dict]], Any]]] = None
+        chunk_results: List[dict],
+        extra_aggregations: Optional[Dict[str, Callable[[List[dict]], Any]]] = None
 ) -> Dict[str, Any]:
     result = {
         "final_present": aggregate_present_rule(chunk_results),
@@ -67,8 +67,8 @@ SEVERITY_ORDER = {
 
 
 def aggregate_worst_severity(
-    chunk_results: List[dict],
-    field_name: str = "severity"
+        chunk_results: List[dict],
+        field_name: str = "severity"
 ) -> Optional[str]:
     severities = [
         r.get(field_name)
@@ -82,10 +82,39 @@ def aggregate_worst_severity(
     return max(severities, key=lambda x: SEVERITY_ORDER[x])
 
 
-def aggregate_shock_chunk_results(chunk_results: List[dict]) -> dict:
+def aggregate_shock_chunk_results_old(chunk_results: List[dict]) -> dict:
     return aggregate_feature_chunk_results(
         chunk_results,
         extra_aggregations={
             "final_severity": lambda results: aggregate_worst_severity(results, "severity")
         }
     )
+
+
+def aggregate_shock_chunk_results(chunk_results: List[dict]) -> dict:
+    result = aggregate_feature_chunk_results(chunk_results)
+
+    final_present = result["final_present"]
+
+    if final_present is True:
+        valid_severities = {"mild", "moderate", "severe"}
+    elif final_present is False:
+        valid_severities = {"none"}
+    else:
+        valid_severities = set()
+
+    severities = [
+        r.get("severity")
+        for r in chunk_results
+        if r.get("severity") in valid_severities
+    ]
+
+    result["final_severity"] = (
+        max(severities, key=lambda x: SEVERITY_ORDER[x]) if severities else None
+    )
+
+    return result
+
+
+def aggregate_coma_chunk_results(chunk_results: List[dict]) -> dict:
+    return aggregate_feature_chunk_results(chunk_results)
