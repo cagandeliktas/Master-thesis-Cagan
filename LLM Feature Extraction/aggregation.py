@@ -1,8 +1,8 @@
 from typing import List, Dict, Any, Optional, Callable
 
 
-def aggregate_present_rule(chunk_results: List[dict]) -> Optional[bool]:
-    presents = [r.get("present") for r in chunk_results]
+def aggregate_present_rule(chunk_results: List[dict], field_name: str = "present") -> Optional[bool]:
+    presents = [r.get(field_name) for r in chunk_results]
 
     if True in presents:
         return True
@@ -21,6 +21,31 @@ def select_evidence(chunk_results: List[dict]) -> str:
             return r["evidence_quote"]
 
     return ""
+
+
+def select_evidence_quotes(
+    chunk_results: List[dict],
+    present_field: str = "shock_present"
+) -> List[str]:
+    def normalize_quotes(value):
+        if isinstance(value, list):
+            return [str(q).strip() for q in value if str(q).strip()]
+        if isinstance(value, str) and value.strip():
+            return [value.strip()]
+        return []
+
+    for r in chunk_results:
+        if r.get(present_field) is True:
+            quotes = normalize_quotes(r.get("evidence_quotes"))
+            if quotes:
+                return quotes
+
+    for r in chunk_results:
+        quotes = normalize_quotes(r.get("evidence_quotes"))
+        if quotes:
+            return quotes
+
+    return []
 
 
 def aggregate_feature_chunk_results(
@@ -92,9 +117,7 @@ def aggregate_shock_chunk_results_old(chunk_results: List[dict]) -> dict:
 
 
 def aggregate_shock_chunk_results(chunk_results: List[dict]) -> dict:
-    result = aggregate_feature_chunk_results(chunk_results)
-
-    final_present = result["final_present"]
+    final_present = aggregate_present_rule(chunk_results, field_name="shock_present")
 
     if final_present is True:
         valid_severities = {"mild", "moderate", "severe"}
@@ -104,16 +127,43 @@ def aggregate_shock_chunk_results(chunk_results: List[dict]) -> dict:
         valid_severities = set()
 
     severities = [
-        r.get("severity")
+        r.get("shock_severity")
         for r in chunk_results
-        if r.get("severity") in valid_severities
+        if r.get("shock_severity") in valid_severities
     ]
 
-    result["final_severity"] = (
+    final_severity = (
         max(severities, key=lambda x: SEVERITY_ORDER[x]) if severities else None
     )
 
-    return result
+    final_evidence_quotes = select_evidence_quotes(chunk_results, present_field="shock_present")
+
+    final_justification = ""
+    for r in chunk_results:
+        if r.get("shock_present") is True and r.get("justification"):
+            final_justification = r["justification"]
+            break
+    if not final_justification:
+        for r in chunk_results:
+            if r.get("justification"):
+                final_justification = r["justification"]
+                break
+
+    confidences = [
+        r.get("confidence")
+        for r in chunk_results
+        if isinstance(r.get("confidence"), (int, float))
+    ]
+    final_confidence = max(confidences) if confidences else None
+
+    return {
+        "final_present": final_present,
+        "final_severity": final_severity,
+        "final_evidence_quotes": final_evidence_quotes,
+        "final_justification": final_justification,
+        "final_confidence": final_confidence,
+        "n_chunks": len(chunk_results),
+    }
 
 
 def aggregate_coma_chunk_results(chunk_results: List[dict]) -> dict:

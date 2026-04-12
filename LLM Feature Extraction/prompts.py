@@ -52,76 +52,6 @@ def build_shock_prompt_old(note_chunk: str) -> str:
     - Label present=true if the chunk documents that shock or clinically meaningful
       hemodynamic instability occurred at any point, even if the chunk later says
       the shock improved or resolved.
-
-    Rules:
-    - present=true if the chunk explicitly documents shock, circulatory failure,
-      refractory or persistent hypotension, vasopressor-dependent instability,
-      or another clearly stated hemodynamic instability state.
-    - present=true also if the chunk describes prior shock/hemodynamic instability
-      that later improved or resolved.
-    - present=false only if the chunk explicitly states absence of shock or
-      hemodynamic instability (e.g. no shock, hemodynamically stable, normotensive,
-      off pressors with stability), AND the chunk does not also document shock
-      occurring elsewhere in the same chunk.
-    - present=false requires explicit textual evidence. If no clear supporting phrase
-      can be quoted, do NOT return false.
-    - If no explicit supporting phrase for present=false exists, return present=null instead.
-    - present=null if shock/hemodynamic instability is not clearly documented.
-    - Do not label shock as present based only on isolated laboratory abnormalities,
-      a single low blood pressure reading, or vague illness severity.
-    - Do not infer shock solely from the fact that vasopressors were mentioned unless the
-      text indicates they were being used for hemodynamic support or hypotension.
-
-    Evidence and confidence:
-    - If present=false, evidence_quote MUST contain the exact phrase indicating absence
-      or resolution (e.g. "hemodynamically stable", "no shock", "off pressors").
-    - Do not return high confidence for present=false without explicit textual evidence.
-    - Prefer exact wording from the chunk for evidence_quote.
-
-    Severity:
-    - severity can be one of: "none", "mild", "moderate", "severe", or null.
-    - If present=true, assign severity based on the strongest active shock /
-      hemodynamic instability documented anywhere in the chunk, even if the chunk
-      later states that shock improved or resolved.
-    - Use "severe" for wording such as refractory shock, profound shock, multiple pressors,
-      pressor escalation, or severe hemodynamic instability.
-    - Use "moderate" for clear shock/hemodynamic instability without severe descriptors.
-    - Use "mild" only for limited or improving instability.
-    - Use "none" only when present=false and the chunk explicitly indicates absence of shock
-      or hemodynamic instability.
-    - If severity cannot be determined but present=true, choose the closest supported level
-      from the text and avoid "none".
-
-    Return ONLY valid JSON with this schema:
-    {{
-      "present": true or false or null,
-      "severity": "none" or "mild" or "moderate" or "severe" or null,
-      "evidence_quote": string,
-      "confidence": "low" or "medium" or "high"
-    }}
-
-    Note chunk:
-    {note_chunk}
-    """).strip()
-
-    return f"[INST] {user_prompt} [/INST]"
-
-
-def build_shock_prompt(note_chunk: str) -> str:
-    user_prompt = textwrap.dedent(f"""
-    Extract whether shock or clinically meaningful hemodynamic instability is documented in this note chunk.
-
-    Definitions:
-    - Shock / hemodynamic instability includes explicit documentation of shock
-      (e.g. cardiogenic shock, septic shock, hemorrhagic shock),
-      circulatory failure, refractory hypotension, vasopressor-dependent hypotension,
-      or persistent pressor requirement for hemodynamic support.
-
-    Task framing:
-    - This is a retrospective documentation task.
-    - Label present=true if the chunk documents that shock or clinically meaningful
-      hemodynamic instability occurred at any point, even if the chunk later says
-      the shock improved or resolved.
     - Label present=false if the chunk does not contain sufficient evidence that shock
       or clinically meaningful hemodynamic instability was documented.
 
@@ -165,6 +95,55 @@ def build_shock_prompt(note_chunk: str) -> str:
       "severity": "none" or "mild" or "moderate" or "severe",
       "evidence_quote": string,
       "confidence": "low" or "medium" or "high"
+    }}
+
+    Note chunk:
+    {note_chunk}
+    """).strip()
+
+    return f"[INST] {user_prompt} [/INST]"
+
+
+def build_shock_prompt(note_chunk: str) -> str:
+    user_prompt = textwrap.dedent(f"""
+    You are analyzing a clinical discharge note to determine whether the patient experienced
+    shock or clinically meaningful hemodynamic instability at any point during the hospital stay.
+
+    Use retrospective labeling:
+    - If instability occurred at any time, classify it as present, even if it later resolved.
+
+    Step 1: Identify evidence
+    Determine whether the note contains any of the following:
+    - explicit mention of shock
+    - vasopressor use documented (e.g. norepinephrine, epinephrine)
+    - hypotension or hemodynamic instability described
+    - evidence of escalation or refractory instability (e.g. multiple pressors, refractory instability)
+
+    Step 2: Apply rules
+    - Vasopressor use in a clinical context suggests hemodynamic instability unless clearly stated otherwise.
+    - Do not rely on isolated blood pressure readings or lab values alone.
+
+    Step 3: Assign severity
+    - "severe": refractory or escalating instability, or multiple vasopressors
+    - "moderate": vasopressor-dependent instability
+    - "mild": instability without vasopressors
+    - "none": no instability
+
+    Step 4: Output JSON
+    - If shock_present=true, shock_severity must be "mild", "moderate", or "severe".
+    - If shock_present=false, shock_severity must be "none".
+    - If shock_present=null, shock_severity must be null.
+    - evidence_quotes should contain the most relevant exact supporting quote(s) from the note.
+    - justification should briefly explain why the evidence supports the final label.
+    - confidence should be a number between 0.0 and 1.0.
+
+    Return ONLY valid JSON with this schema:
+    {{
+      "shock_present": true or false or null,
+      "shock_severity": "none" or "mild" or "moderate" or "severe" or null,
+      "evidence_quotes": ["string"],
+      "justification": "string",
+      "confidence": 0.0
     }}
 
     Note chunk:

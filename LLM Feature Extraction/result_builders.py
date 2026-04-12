@@ -31,7 +31,9 @@ def build_shock_result_row(row: pd.Series, result: dict, chunks: list[str]) -> d
         "note_type": row["note_type"],
         "llm_present": result["final_present"],
         "llm_severity": result.get("final_severity"),
-        "llm_evidence_quote": result["final_evidence_quote"],
+        "llm_evidence_quotes": result.get("final_evidence_quotes", []),
+        "llm_justification": result.get("final_justification", ""),
+        "llm_confidence": result.get("final_confidence"),
         "n_chunks": result["n_chunks"],
         "chunks": chunks,
     }

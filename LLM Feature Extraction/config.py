@@ -21,7 +21,7 @@ LLAMA_SERVER_URL = "http://127.0.0.1:8080"
 
 CHUNK_SENTENCE_SIZE = 5
 CHUNK_SENTENCE_OVERLAP = 1
-MAX_TOKENS = 200
+MAX_TOKENS = 300
 TEMPERATURE = 0.0
 
 
@@ -52,8 +52,14 @@ SHOCK_KEYWORDS_STRICT = [
     "off pressors",
     "shock resolved"
 ]
-SHOCK_KEYS = ["present", "severity", "evidence_quote", "confidence"]
-
+#SHOCK_KEYS = ["present", "severity", "evidence_quote", "confidence"]
+SHOCK_KEYS = [
+    "shock_present",
+    "shock_severity",
+    "evidence_quotes",
+    "justification",
+    "confidence",
+]
 
 EMPTY_LACTATE_RESULT = {
     "final_present": None,
@@ -62,10 +68,19 @@ EMPTY_LACTATE_RESULT = {
     "n_chunks": 0,
 }
 
+#EMPTY_SHOCK_RESULT = {
+#    "final_present": None,
+#    "final_severity": None,
+#    "final_evidence_quote": "",
+#    "n_chunks": 0,
+#}
+
 EMPTY_SHOCK_RESULT = {
     "final_present": None,
     "final_severity": None,
-    "final_evidence_quote": "",
+    "final_evidence_quotes": [],
+    "final_justification": "",
+    "final_confidence": None,
     "n_chunks": 0,
 }
 

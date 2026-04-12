@@ -62,8 +62,15 @@ def run_feature_extraction_for_note(
 
             raw_output = f"[ERROR] {e}"
             parsed = {k: None for k in json_keys}
-            parsed["evidence_quote"] = ""
-            parsed["confidence"] = "low"
+
+            if "evidence_quote" in json_keys:
+                parsed["evidence_quote"] = ""
+            if "evidence_quotes" in json_keys:
+                parsed["evidence_quotes"] = []
+            if "confidence" in json_keys:
+                parsed["confidence"] = None
+            if "justification" in json_keys:
+                parsed["justification"] = ""
 
         chunk_results.append(parsed)
         chunk_debug_rows.append({
@@ -147,4 +154,4 @@ def main(feature_name: str = "lactate"):
 
 
 if __name__ == "__main__":
-    main("coma")  #main("lactate") #OR #main("shock") # main("coma")
+    main("shock")  #main("lactate") #OR #main("shock") # main("coma")
