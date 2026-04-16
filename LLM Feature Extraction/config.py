@@ -23,6 +23,8 @@ CHUNK_SENTENCE_SIZE = 5
 CHUNK_SENTENCE_OVERLAP = 1
 MAX_TOKENS = 300
 TEMPERATURE = 0.0
+FULL_NOTE_N_CHUNKS = 4
+DEFAULT_CHUNK_WINDOW = 1
 
 
 LACTATE_KEYWORDS = ["lactate", "lactic"]
@@ -155,6 +157,10 @@ FEATURE_CONFIGS = {
         "empty_result": EMPTY_LACTATE_RESULT,
         "result_row_builder": build_lactate_result_row,
         "output_file_prefix": "lactate_extraction_results",
+        "chunking_mode": "keyword",
+        "window": DEFAULT_CHUNK_WINDOW,
+        "chunk_size": CHUNK_SENTENCE_SIZE,
+        "overlap": CHUNK_SENTENCE_OVERLAP,
     },
     "shock": {
         "keywords": SHOCK_KEYWORDS_STRICT,
@@ -164,6 +170,8 @@ FEATURE_CONFIGS = {
         "empty_result": EMPTY_SHOCK_RESULT,
         "result_row_builder": build_shock_result_row,
         "output_file_prefix": "shock_extraction_results",
+        "chunking_mode": "full_note",
+        "n_full_note_chunks": FULL_NOTE_N_CHUNKS,
     },
     "coma": {
         "keywords": COMA_KEYWORDS,
@@ -173,5 +181,9 @@ FEATURE_CONFIGS = {
         "empty_result": EMPTY_COMA_RESULT,
         "result_row_builder": build_coma_result_row,
         "output_file_prefix": "coma_extraction_results",
+        "chunking_mode": "keyword",
+        "window": DEFAULT_CHUNK_WINDOW,
+        "chunk_size": CHUNK_SENTENCE_SIZE,
+        "overlap": CHUNK_SENTENCE_OVERLAP,
     },
 }

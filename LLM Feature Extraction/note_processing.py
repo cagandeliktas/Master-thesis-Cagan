@@ -141,3 +141,29 @@ def prepare_chunks(
         chunk_size=chunk_size,
         overlap=overlap,
     )
+
+
+def prepare_full_note_sentence_chunks(
+    note_text: str,
+    n_chunks: int = 4,
+) -> List[str]:
+    """
+    Split the full cleaned note into roughly equal-sized chunks based on sentence count.
+    This bypasses keyword sentence selection entirely.
+    """
+    text = clean_raw_text(note_text)
+    sentences = split_into_sentences(text)
+
+    if not sentences:
+        return []
+
+    total = len(sentences)
+    chunk_len = max(1, (total + n_chunks - 1) // n_chunks)  # ceiling division
+
+    chunks = []
+    for start in range(0, total, chunk_len):
+        chunk = " ".join(sentences[start:start + chunk_len]).strip()
+        if chunk:
+            chunks.append(chunk)
+
+    return chunks

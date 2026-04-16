@@ -11,7 +11,7 @@ from config import (
     MAX_TOKENS,
     TEMPERATURE,
 )
-from note_processing import prepare_chunks
+from note_processing import prepare_chunks, prepare_full_note_sentence_chunks
 from llm_client import call_llama_server
 from parsing import parse_llm_json
 
@@ -23,14 +23,27 @@ def run_feature_extraction_for_note(
     json_keys: list[str],
     aggregator,
     empty_result: dict,
+    chunking_mode: str = "keyword",
+    window: int = 1,
+    chunk_size: int = 5,
+    overlap: int = 1,
+    n_full_note_chunks: int = 4,
 ) -> tuple[dict, list[str], list[dict]]:
-    chunks = prepare_chunks(
-        note_text=note_text,
-        keywords=keywords,
-        chunk_size=CHUNK_SENTENCE_SIZE,
-        overlap=CHUNK_SENTENCE_OVERLAP,
-        window=1
-    )
+    if chunking_mode == "keyword":
+        chunks = prepare_chunks(
+            note_text=note_text,
+            keywords=keywords,
+            chunk_size=chunk_size,
+            overlap=overlap,
+            window=window,
+        )
+    elif chunking_mode == "full_note":
+        chunks = prepare_full_note_sentence_chunks(
+            note_text=note_text,
+            n_chunks=n_full_note_chunks,
+        )
+    else:
+        raise ValueError(f"Unknown chunking_mode: {chunking_mode}")
 
     if not chunks:
         result = empty_result.copy()
@@ -117,9 +130,15 @@ def main(feature_name: str = "lactate"):
             json_keys=feature_cfg["json_keys"],
             aggregator=feature_cfg["aggregator"],
             empty_result=feature_cfg["empty_result"],
+            chunking_mode=feature_cfg.get("chunking_mode", "keyword"),
+            window=feature_cfg.get("window", 1),
+            chunk_size=feature_cfg.get("chunk_size", CHUNK_SENTENCE_SIZE),
+            overlap=feature_cfg.get("overlap", CHUNK_SENTENCE_OVERLAP),
+            n_full_note_chunks=feature_cfg.get("n_full_note_chunks", 4),
         )
 
         result_row = feature_cfg["result_row_builder"](row, result, chunks)
+        result_row["chunking_mode"] = feature_cfg.get("chunking_mode", "keyword")
 
         # optional: keep compact JSON string in patient-level file
         result_row["chunk_debug_rows"] = json.dumps(chunk_debug_rows, ensure_ascii=False)
@@ -135,6 +154,7 @@ def main(feature_name: str = "lactate"):
                 "chunk_text": debug_row["chunk_text"],
                 "raw_output": debug_row["raw_output"],
                 "parsed_output": json.dumps(debug_row["parsed_output"], ensure_ascii=False),
+                "chunking_mode": feature_cfg.get("chunking_mode", "keyword"),
             }
             chunk_level_results.append(chunk_row)
 
@@ -143,8 +163,16 @@ def main(feature_name: str = "lactate"):
 
     timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
 
-    out_path = OUTPUT_DIR / f'{feature_cfg["output_file_prefix"]}_{timestamp}.csv'
-    chunk_out_path = OUTPUT_DIR / f'{feature_cfg["output_file_prefix"]}_chunks_{timestamp}.csv'
+    base_prefix = feature_cfg["output_file_prefix"]
+    chunking_mode = feature_cfg.get("chunking_mode", "keyword")
+
+    if chunking_mode == "keyword":
+        final_prefix = base_prefix
+    else:
+        final_prefix = f"{base_prefix}_{chunking_mode}"
+
+    out_path = OUTPUT_DIR / f"{final_prefix}_{timestamp}.csv"
+    chunk_out_path = OUTPUT_DIR / f"{final_prefix}_chunks_{timestamp}.csv"
 
     out_df.to_csv(out_path, index=False)
     chunk_df.to_csv(chunk_out_path, index=False)

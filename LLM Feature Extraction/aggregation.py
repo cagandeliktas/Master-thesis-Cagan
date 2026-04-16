@@ -168,3 +168,4 @@ def aggregate_shock_chunk_results(chunk_results: List[dict]) -> dict:
 
 def aggregate_coma_chunk_results(chunk_results: List[dict]) -> dict:
     return aggregate_feature_chunk_results(chunk_results)
+
