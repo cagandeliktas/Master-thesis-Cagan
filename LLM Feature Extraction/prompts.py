@@ -169,15 +169,17 @@ def build_coma_prompt(note_chunk: str) -> str:
     - Label present=true if coma or unresponsiveness is documented at any point,
       even if the patient later improved or regained consciousness.
     - Label present=false if there is no clear evidence of coma or unresponsiveness.
+    - Label present=null if the chunk is ambiguous or does not contain enough information
+      to make a determination.
 
     Rules:
     - present=true if the chunk explicitly documents coma, unresponsiveness, or another clearly
       stated severely depressed level of consciousness.
     - present=true also if the chunk describes prior coma/unresponsiveness that later improved.
-    - present=false for all other cases, including:
-      - explicit normal/adequate responsiveness (e.g., awake, alert, following commands)
-      - no mention of coma/unresponsiveness
-      - ambiguous or weak evidence that does not clearly document coma/unresponsiveness
+    - present=false if there is explicit normal/adequate responsiveness (e.g., awake, alert,
+      following commands) or no mention of coma/unresponsiveness.
+    - present=null if the chunk contains ambiguous or weak evidence that does not clearly
+      support either a positive or negative label.
 
     Important exclusions:
     - Do NOT label present=true based only on:
@@ -197,11 +199,11 @@ def build_coma_prompt(note_chunk: str) -> str:
     - Prefer exact wording from the chunk for evidence_quote.
     - If present=true, quote the phrase that best supports coma/unresponsiveness.
     - If present=false and there is an explicit normal/responsive phrase, quote it.
-    - If present=false due to absence of clear evidence, evidence_quote may be empty.
+    - If present=null or present=false due to absence of clear evidence, evidence_quote may be empty.
 
     Return ONLY valid JSON with this schema:
     {{
-      "present": true or false,
+      "present": true or false or null,
       "evidence_quote": string,
       "confidence": "low" or "medium" or "high"
     }}

@@ -23,7 +23,7 @@ CHUNK_SENTENCE_SIZE = 5
 CHUNK_SENTENCE_OVERLAP = 1
 MAX_TOKENS = 300
 TEMPERATURE = 0.0
-FULL_NOTE_N_CHUNKS = 4
+FULL_NOTE_N_CHUNKS = 2
 DEFAULT_CHUNK_WINDOW = 1
 
 
@@ -170,7 +170,7 @@ FEATURE_CONFIGS = {
         "empty_result": EMPTY_SHOCK_RESULT,
         "result_row_builder": build_shock_result_row,
         "output_file_prefix": "shock_extraction_results",
-        "chunking_mode": "full_note",
+        "chunking_mode": "keyword",
         "n_full_note_chunks": FULL_NOTE_N_CHUNKS,
     },
     "coma": {

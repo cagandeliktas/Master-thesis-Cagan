@@ -14,6 +14,7 @@ from config import (
 from note_processing import prepare_chunks, prepare_full_note_sentence_chunks
 from llm_client import call_llama_server
 from parsing import parse_llm_json
+import time
 
 
 def run_feature_extraction_for_note(
@@ -108,6 +109,7 @@ def main(feature_name: str = "lactate"):
 
     feature_cfg = FEATURE_CONFIGS[feature_name]
     now = datetime.now()
+    start = time.time()
 
     df = pd.read_csv("../Outputs/discharge_filtered.csv")
     df_final_structured = pd.read_csv("../Outputs/final_structured_dataset.csv")
@@ -179,7 +181,8 @@ def main(feature_name: str = "lactate"):
 
     print(f"Saved patient-level results to: {out_path}")
     print(f"Saved chunk-level results to: {chunk_out_path}")
+    print(f"Total runtime: {(time.time() - start) / 60:.1f} min")
 
 
 if __name__ == "__main__":
-    main("shock")  #main("lactate") #OR #main("shock") # main("coma")
+    main("coma")  #main("lactate") #OR #main("shock") # main("coma")
