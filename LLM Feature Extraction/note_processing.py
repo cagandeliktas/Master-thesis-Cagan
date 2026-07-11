@@ -1,8 +1,25 @@
+"""
+Text cleaning and chunking for clinical notes.
+
+A full discharge note is too long to send to the model in one go, so this
+module prepares it. It first cleans up the raw MIMIC formatting (de-identifi-
+cation placeholders, wrapped lines, extra whitespace), splits the note into
+sentences, and then builds short overlapping chunks. Two chunking strategies
+are provided: keyword-based (keep only sentences near a feature keyword plus
+some context) and full-note (split the whole note into a few equal parts).
+"""
+
 import re
 from typing import List
 
 
 def clean_raw_text(text: str) -> str:
+    """Clean raw MIMIC note text into something easier to sentence-split.
+
+    Removes the de-identification placeholders (like [**...**] and ___),
+    collapses repeated spaces and blank lines, and normalizes line endings.
+    Returns an empty string if the input is not a string.
+    """
     if not isinstance(text, str):
         return ""
 
@@ -15,6 +32,12 @@ def clean_raw_text(text: str) -> str:
 
 
 def is_lab_like_line(line: str) -> bool:
+    """Return True if a line looks like a lab result line.
+
+    Used to keep lab lines (lactate, glucose, blood gas values, etc.) on their
+    own instead of merging them into surrounding prose, since they are often
+    wrapped or written as short fragments.
+    """
     return bool(re.search(
         r"\b(lactate|glucose|ph|hco3|anion gap|base xs|wbc|hgb|hct|blood)\b",
         line,
@@ -23,6 +46,13 @@ def is_lab_like_line(line: str) -> bool:
 
 
 def normalize_wrapped_lines(text: str) -> str:
+    """Join lines that were hard-wrapped mid-sentence back together.
+
+    Clinical notes often break a single sentence across several lines. This
+    merges those lines into one until it hits sentence-ending punctuation or a
+    blank line, but keeps lab-like lines separate so their values are not glued
+    onto neighbouring text.
+    """
     if not text:
         return ""
 
@@ -59,6 +89,11 @@ def normalize_wrapped_lines(text: str) -> str:
 
 
 def split_into_sentences(text: str) -> List[str]:
+    """Split cleaned note text into a list of sentences.
+
+    First normalizes wrapped lines, then splits each line on sentence-ending
+    punctuation. Lab-like lines are kept whole as single "sentences".
+    """
     if not text:
         return []
 
@@ -88,6 +123,13 @@ def select_keyword_sentences(
     keywords: List[str],
     window: int = 0,
 ) -> List[str]:
+    """Keep only sentences that mention a keyword, plus nearby context.
+
+    Cleans and sentence-splits the note, then keeps every sentence that contains
+    one of the keywords together with `window` sentences on each side. This is
+    how the pipeline zooms in on the parts of a note that are relevant to a
+    feature instead of feeding the whole note to the model.
+    """
     text = clean_raw_text(text)
     sentences = split_into_sentences(text)
 
@@ -107,6 +149,12 @@ def select_keyword_sentences(
 
 
 def make_chunks(sentences: List[str], chunk_size: int = 5, overlap: int = 1) -> List[str]:
+    """Group sentences into overlapping chunks of `chunk_size` sentences.
+
+    Consecutive chunks share `overlap` sentences so a piece of evidence that
+    sits on a chunk boundary is not lost. Each chunk is returned as a single
+    joined string.
+    """
     if not sentences:
         return []
 
@@ -130,6 +178,12 @@ def prepare_chunks(
     chunk_size: int = 5,
     overlap: int = 1,
 ) -> List[str]:
+    """Run the full keyword-based chunking for one note.
+
+    Selects the keyword sentences (with context) and then packs them into
+    overlapping chunks. This is the main entry point used by the keyword
+    chunking mode.
+    """
     selected_sentences = select_keyword_sentences(
         text=note_text,
         keywords=keywords,

@@ -1,3 +1,16 @@
+"""
+Central configuration for the LLM feature extraction pipeline.
+
+This file holds all the settings and lookup tables the pipeline needs in one
+place: paths, the local llama server URL, chunking parameters, and the keyword
+lists used to find relevant sentences in a note for each feature (lactate,
+shock, coma).
+
+The FEATURE_CONFIGS dictionary at the bottom ties everything together. For each
+feature it points to the right prompt builder, aggregator, empty-result
+template and result-row builder, so main.py can run any feature just by name.
+"""
+
 from pathlib import Path
 
 from prompts import build_lactate_prompt, build_shock_prompt, build_coma_prompt
@@ -54,7 +67,6 @@ SHOCK_KEYWORDS_STRICT = [
     "off pressors",
     "shock resolved"
 ]
-#SHOCK_KEYS = ["present", "severity", "evidence_quote", "confidence"]
 SHOCK_KEYS = [
     "shock_present",
     "shock_severity",
@@ -69,13 +81,6 @@ EMPTY_LACTATE_RESULT = {
     "final_evidence_quote": "",
     "n_chunks": 0,
 }
-
-#EMPTY_SHOCK_RESULT = {
-#    "final_present": None,
-#    "final_severity": None,
-#    "final_evidence_quote": "",
-#    "n_chunks": 0,
-#}
 
 EMPTY_SHOCK_RESULT = {
     "final_present": None,

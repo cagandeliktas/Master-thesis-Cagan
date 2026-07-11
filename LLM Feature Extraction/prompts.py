@@ -1,7 +1,19 @@
+"""
+Prompt templates for each extracted feature.
+
+Every function here takes one note chunk and wraps it in the instruction text
+the model sees. The prompts spell out the definitions, the labelling rules
+(including retrospective labelling, so a feature that later resolved still
+counts as present) and the exact JSON schema the model must return. The
+build_shock_prompt_old function is the first shock prompt and is kept only for
+reference; build_shock_prompt is the version actually used.
+"""
+
 import textwrap
 
 
 def build_lactate_prompt(note_chunk: str) -> str:
+    """Build the lactate extraction prompt for one note chunk."""
     user_prompt = textwrap.dedent(f"""
     Extract whether lactate is elevated in this note chunk.
 
@@ -38,6 +50,7 @@ def build_lactate_prompt(note_chunk: str) -> str:
 
 
 def build_shock_prompt_old(note_chunk: str) -> str:
+    """Build the first version of the shock prompt (kept for reference)."""
     user_prompt = textwrap.dedent(f"""
     Extract whether shock or clinically meaningful hemodynamic instability is documented in this note chunk.
 
@@ -105,6 +118,7 @@ def build_shock_prompt_old(note_chunk: str) -> str:
 
 
 def build_shock_prompt(note_chunk: str) -> str:
+    """Build the shock extraction prompt (step-by-step version in use)."""
     user_prompt = textwrap.dedent(f"""
     You are analyzing a clinical discharge note to determine whether the patient experienced
     shock or clinically meaningful hemodynamic instability at any point during the hospital stay.
@@ -154,6 +168,7 @@ def build_shock_prompt(note_chunk: str) -> str:
 
 
 def build_coma_prompt(note_chunk: str) -> str:
+    """Build the coma / unresponsiveness extraction prompt for one note chunk."""
     user_prompt = textwrap.dedent(f"""
     Extract whether coma or unresponsiveness is documented in this note chunk.
 

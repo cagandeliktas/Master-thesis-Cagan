@@ -1,3 +1,17 @@
+"""
+Entry point for the LLM feature extraction pipeline.
+
+This ties the whole pipeline together. For a chosen feature (lactate, shock or
+coma) it loads the filtered discharge notes, and for each note it chunks the
+text, sends every chunk to the local model, parses the JSON replies and
+aggregates them into one answer per note. Two CSVs are written to the outputs
+folder: a patient-level file with the final labels and a chunk-level file with
+the raw model output for each chunk, which is useful for debugging and for the
+manual annotation comparison later.
+
+Run it by setting the feature name in the main(...) call at the bottom.
+"""
+
 import pandas as pd
 from datetime import datetime
 import json
@@ -30,6 +44,14 @@ def run_feature_extraction_for_note(
     overlap: int = 1,
     n_full_note_chunks: int = 4,
 ) -> tuple[dict, list[str], list[dict]]:
+    """Run the full extraction for a single note and return the result.
+
+    Builds the chunks (keyword or full-note mode), asks the model about each
+    chunk, parses every reply and aggregates them into one note-level result.
+    A chunk that fails or returns bad output is caught and filled with empty
+    values so one bad chunk does not stop the note. Returns a tuple of
+    (final aggregated result, the chunks that were sent, per-chunk debug rows).
+    """
     if chunking_mode == "keyword":
         chunks = prepare_chunks(
             note_text=note_text,
@@ -101,6 +123,13 @@ def run_feature_extraction_for_note(
 
 
 def main(feature_name: str = "lactate"):
+    """Run the extraction for one feature over the whole note cohort.
+
+    Loads the filtered discharge notes merged with the structured dataset, runs
+    run_feature_extraction_for_note on every note, and saves the patient-level
+    and chunk-level results to timestamped CSVs in the outputs folder. Raises
+    ValueError if the feature name is not one of the configured features.
+    """
     if feature_name not in FEATURE_CONFIGS:
         raise ValueError(
             f"Unknown feature: {feature_name}. "

@@ -1,8 +1,23 @@
+"""
+Turn the raw model output into a clean Python dictionary.
+
+The model is asked to return JSON, but the reply is not always tidy: it can be
+wrapped in extra text, use string "true"/"false" instead of real booleans, or
+leave out some keys. The functions here pull out the first JSON object from the
+reply, fill in any missing keys, and normalize the boolean, quote list and
+confidence fields so the rest of the pipeline gets predictable types.
+"""
+
 import json
 from typing import Dict, List, Any
 
 
 def _normalize_bool(value):
+    """Convert string "true"/"false"/"null" into real bool/None values.
+
+    Leaves values that are already bool or None untouched, and returns anything
+    else unchanged.
+    """
     if isinstance(value, bool) or value is None:
         return value
 
@@ -19,6 +34,15 @@ def _normalize_bool(value):
 
 
 def parse_llm_json(raw_output: str, required_keys: List[str]) -> Dict[str, Any]:
+    """Extract and clean the first JSON object from a raw model reply.
+
+    Finds the first "{" in the text and decodes the JSON object that starts
+    there, ignoring any trailing text the model added. Every key in
+    required_keys is guaranteed to be present in the returned dict (missing ones
+    are set to None), and the boolean, evidence_quotes and confidence fields are
+    normalized to consistent types. Raises ValueError if the reply is empty or
+    no valid JSON object can be found.
+    """
     if not isinstance(raw_output, str) or not raw_output.strip():
         raise ValueError("Empty LLM output")
 
