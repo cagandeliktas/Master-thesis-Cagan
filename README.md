@@ -1,9 +1,6 @@
-# LLM-Based Clinical Feature Extraction from Discharge Notes
+# LLM-Based Clinical Feature Extraction from Discharge Notes: Validation and Retrospective Risk Analysis in a Post-Cardiac Arrest Cohort
 
-**Validation and Retrospective Risk Analysis in a Post-Cardiac Arrest Cohort**
-
-Master thesis — Çağan Yiğit Deliktaş
-Data and Web Science Group, University of Mannheim (Prof. Dr. Philipp Kellmeyer)
+**Master thesis** — Çağan Yiğit Deliktaş, Data and Web Science Group, University of Mannheim, supervised by Prof. Dr. Philipp Kellmeyer.
 
 This repository holds the code for my master thesis. The project asks whether a
 large language model can turn free-text discharge summaries into a small set of
@@ -62,38 +59,49 @@ a linkable discharge note and enter the note-based analyses.
 
 The repo follows the same order as the thesis: reconstruct the structured
 baseline, extract the note features, validate them, then relate them to risk.
+There are three top-level folders.
 
-```
-Preprocessing/
-  Preprocessing.ipynb                     Structured pipeline: cohort + first-24h features
-  Preprocessing_part_2_textual_data.ipynb Embedding baseline (TF-IDF / BERT) reconstructed from prior work
-  inspect_notes.ipynb                     Exploring the discharge-note structure before writing the cleaner
-  hadm_id_uniqueness.ipynb                Sanity check on the admission id
+### `Preprocessing/` — building the datasets
 
-LLM Feature Extraction/          -- the extraction pipeline (thesis Ch. 5)
-  main.py                    Entry point: run one feature over the whole cohort
-  config.py                  Paths, chunking settings, keyword lists, per-feature configuration
-  note_processing.py         Text cleaning, sentence splitting, keyword selection, chunking
-  prompts.py                 Feature-specific prompts (lactate, shock, coma)
-  llm_client.py              Client for the local llama.cpp server
-  parsing.py                 Parsing and normalising the model's JSON replies
-  aggregation.py             Rolling up the per-chunk answers into one label per patient
-  result_builders.py         Building the final per-note output rows
-  check_unique_hadm_id_in_cohort.ipynb    Cohort sanity check
-  Result Analysis/           Validation: manual annotation and the "gold rule" checks
-    manual_annotation_sample_selection.ipynb   Pick + display the notes to annotate
-    manual_annotation_result_evaluation.ipynb  LLM vs. manual labels per feature
-    figures_manual_annotation.ipynb            Confusion matrices / agreement figures
-    first_analysis_gold_rule.ipynb             Structured-vs-LLM lactate, shock added value
-    coma_second_prompt.ipynb                   Second-iteration coma prompt comparison
+| File | What it does |
+|---|---|
+| `Preprocessing.ipynb` | Structured pipeline: builds the cardiac-arrest cohort and the first-24h features |
+| `Preprocessing_part_2_textual_data.ipynb` | Embedding baseline (TF-IDF / BERT), reconstructed from prior work |
+| `inspect_notes.ipynb` | Exploring the discharge-note structure before writing the cleaner |
+| `hadm_id_uniqueness.ipynb` | Sanity check on the admission id |
 
-Modelling/                       -- baseline risk and retrospective analysis (thesis Ch. 4, 6)
-  structured_model_first24h.ipynb            Leakage-aware CV, out-of-fold baseline risk, unknown-category tests
-  Modelling_part_3_structured_dataset.ipynb  Feature selection (LASSO, XGBoost) + logistic regression, structured
-  Modelling_part_3_textual_dataset.ipynb     Same pipeline with the textual features added
-  coma_unknown_exploratory_analysis_FINAL.ipynb  Why the coma-indeterminate group is high-risk (GCS, RASS, sedation, ventilation)
-  figures_risk_and_profiles.ipynb            Thesis figures: risk separation, mortality, severity, physiology, GCS
-```
+### `LLM Feature Extraction/` — the extraction pipeline (thesis Ch. 5)
+
+| File | What it does |
+|---|---|
+| `main.py` | Entry point: run one feature over the whole cohort |
+| `config.py` | Paths, chunking settings, keyword lists, per-feature configuration |
+| `note_processing.py` | Text cleaning, sentence splitting, keyword selection, chunking |
+| `prompts.py` | Feature-specific prompts (lactate, shock, coma) |
+| `llm_client.py` | Client for the local llama.cpp server |
+| `parsing.py` | Parsing and normalising the model's JSON replies |
+| `aggregation.py` | Rolling up the per-chunk answers into one label per patient |
+| `result_builders.py` | Building the final per-note output rows |
+| `check_unique_hadm_id_in_cohort.ipynb` | Cohort sanity check |
+
+`LLM Feature Extraction/Result Analysis/` — validation via manual annotation:
+
+| File | What it does |
+|---|---|
+| `manual_annotation_sample_selection.ipynb` | Pick and display the notes to annotate |
+| `manual_annotation_result_evaluation.ipynb` | LLM vs. manual labels per feature |
+| `figures_manual_annotation.ipynb` | Confusion matrices and agreement figures |
+| `first_analysis_gold_rule.ipynb` | Structured-vs-LLM lactate, and shock added value |
+| `coma_second_prompt.ipynb` | Second-iteration coma prompt comparison |
+
+### `Modelling/` — baseline risk and retrospective analysis (thesis Ch. 4, 6)
+
+| File | What it does |
+|---|---|
+| `structured_model_first24h.ipynb` | Leakage-aware CV, out-of-fold baseline risk, indeterminate-category tests |
+| `Modelling_part_3_structured_dataset.ipynb` | Feature selection (LASSO, XGBoost) and logistic regression |
+| `coma_unknown_exploratory_analysis_FINAL.ipynb` | Why the coma-indeterminate group is high-risk (GCS, RASS, sedation, ventilation) |
+| `figures_risk_and_profiles.ipynb` | Thesis figures: risk separation, mortality, severity, physiology, GCS |
 
 ## Structured baseline risk
 
